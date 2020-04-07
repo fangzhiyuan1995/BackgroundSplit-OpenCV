@@ -501,6 +501,7 @@ void ViBePlus::ExtractBG()
                 SegModel.at<uchar>(i, j) = 255;
 
                 // 如果某个像素点连续50次被检测为前景，则认为一块静止区域被误判为运动，将其更新为背景点
+                //这里只更新本像素点，不更新邻域像素点
                 // if this pixel is regarded as foreground for more than 50 times, then we regard this static area as dynamic area by mistake, and Run this pixel as background one.
                 if(samples_ForeNum[i][j] > 50)
                 {
@@ -571,6 +572,7 @@ void ViBePlus::CalcuUpdateModel()
         if(father >= 0 && grandpa == -1)
         {
             // 填充面积 <= 50 的前景空洞区域
+            //更新蒙版：填充面积小于等于50（像素）的前景孔洞区域，该操作 用来限制散布在前景物体中的错误背景
             // Fill Foreground Hole Areas whose Area is less than 50
             if(contourArea(contours[i]) <= 50)
                 drawContours(UpdateModel, contours, i, Scalar(255), -1);
@@ -586,6 +588,7 @@ void ViBePlus::CalcuUpdateModel()
             int state = 0, maxGrad = 0;
             //=============================
             //     判断背景内边缘
+            //      解释：首先该像素点是一个背景点，如果他的周围有前景点，那么是背景内边缘
             //-----------------------------------------------
             //   Judge Background Inner Edge
             //=============================
@@ -642,6 +645,8 @@ void ViBePlus::CalcuUpdateModel()
             //----------------------------------------------
             //   Calculate Blink Level
             //==================================
+            //如果是内边缘点，那么很有可能是闪烁点；
+            //否则就不是内边缘点即是背景点且周围没有前景点，或者是前景点，那么这两种情况的上下两帧不能说明该点是闪烁点。
             if(samples_BGInner[i][j])
             {
                 // 当前邻域状态与上一帧邻域状态相同，则说明当前点不闪烁；
@@ -677,6 +682,7 @@ void ViBePlus::CalcuUpdateModel()
             if(samples_BlinkLevel[i][j] > 30)
             {
                 //为什么这里：闪烁大于30 却把它当成前景
+                //估计是把它当成前景，用连通域的面积小于10，然后用背景颜色0填充
                 UpdateModel.at<uchar>(i, j) = 255;
 //                SegModel.at<uchar>(i, j) = 0;
             }
@@ -709,6 +715,7 @@ void ViBePlus::CalcuUpdateModel()
         //      (2) No Level 2 of Father Contour;
         // Then:  It means this Contour is Level 1 Contour, and it's Foreground Hole Areas we need.
         //====================================================================
+        //为什么用了50又用20，虽然表达的意思不一样，但是实际操作不是多余了吗？
         if(father >= 0 && grandpa == -1) {
             // 填充面积 <= 20 的前景空洞区域
             // Fill Foreground Hole Areas whose Area is less than 20
