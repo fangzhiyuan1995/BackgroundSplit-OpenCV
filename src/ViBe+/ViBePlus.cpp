@@ -676,6 +676,7 @@ void ViBePlus::CalcuUpdateModel()
             //==================================
             if(samples_BlinkLevel[i][j] > 30)
             {
+                //为什么这里：闪烁大于30 却把它当成前景
                 UpdateModel.at<uchar>(i, j) = 255;
 //                SegModel.at<uchar>(i, j) = 0;
             }
@@ -789,10 +790,13 @@ void ViBePlus::Update()
                     //------------------------------------------------------------------
                     //  Jump out of this Loop for Inhibiting Diffusion According to Gray Value Max Gradient of Current Pixel.
                     //====================================================================
-                    if(samples_MaxInnerGrad[i][j] > 50)     continue;
+                    //说明该点是边缘点，那么就不应该更新它的邻域，这样很有可能把运动目标的像素点给更新了
+                    if(samples_MaxInnerGrad[i][j] > 50)     continue;       
 
                     int row, col;
-                    uchar newVal = Gray.at<uchar>(i, j);
+                    //是用当前的像素值去更新邻域的像素值
+                    //首先，先随机找邻域
+                    uchar newVal = Gray.at<uchar>(i, j);    
                     random = rng.uniform(0, 9); row = i + c_yoff[random];
                     random = rng.uniform(0, 9); col = j + c_xoff[random];
 
@@ -802,14 +806,15 @@ void ViBePlus::Update()
                     if (row >= Gray.rows)  row = Gray.rows - 1;
                     if (col < 0) col = 0;
                     if (col >= Gray.cols) col = Gray.cols - 1;
-
+                        
+                    //其次，再随机替换邻域样本的一个值 包括更新该点的方差
                     // 为样本库赋随机值
                     // Set random pixel's Value for Sample Library
                     random = rng.uniform(0, num_samples);
                     UpdatePixSampleSumSquare(row, col, random, newVal);
                     samples[row][col][random] = newVal;
 
-                    // 同时更新RGB通道样本库
+                    // 同时更新RGB通道样本库，还是当前的BGR值更新邻域的BGR值
                     // Update RGB Channels' Values of Sample Libraries
                     for(int m = 0; m < 3; m++)
                         samples_Frame[row][col][random][m] = Frame.at<Vec3b>(i, j)[m];
