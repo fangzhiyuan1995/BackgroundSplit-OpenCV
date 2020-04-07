@@ -715,7 +715,7 @@ void ViBePlus::CalcuUpdateModel()
         //      (2) No Level 2 of Father Contour;
         // Then:  It means this Contour is Level 1 Contour, and it's Foreground Hole Areas we need.
         //====================================================================
-        //为什么用了50又用20，虽然表达的意思不一样，但是实际操作不是多余了吗？
+        //不同的填充区域
         if(father >= 0 && grandpa == -1) {
             // 填充面积 <= 20 的前景空洞区域
             // Fill Foreground Hole Areas whose Area is less than 20
